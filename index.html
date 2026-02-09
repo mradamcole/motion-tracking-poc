@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Motion Tracking POC</title>
+  <link rel="stylesheet" href="/styles/main.css" />
+</head>
+<body>
+  <!-- Top Bar -->
+  <header id="top-bar">
+    <h1>Motion Tracking POC</h1>
+    <div class="top-bar-controls">
+      <button id="btn-camera" class="btn btn-primary">Start Camera</button>
+      <button id="btn-draw-zone" class="btn" disabled>Draw Zone</button>
+      <button id="btn-clear-alerts" class="btn" disabled>Clear Alerts</button>
+      <button id="btn-settings" class="btn" disabled>Settings</button>
+    </div>
+  </header>
+
+  <main id="app">
+    <!-- Left: Video + Canvas Stack -->
+    <section id="video-section">
+      <div id="video-container">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="skeleton-canvas"></canvas>
+        <canvas id="zone-canvas"></canvas>
+        <div id="camera-error" class="hidden">
+          <p>Camera access is required for this application.</p>
+          <p>Please allow camera permissions in your browser settings and reload.</p>
+        </div>
+        <div id="loading-overlay" class="hidden">
+          <p>Loading pose detection model...</p>
+        </div>
+      </div>
+      <p id="camera-note" class="note">
+        Best results with a wall-mounted camera at chest/waist height.
+      </p>
+    </section>
+
+    <!-- Right: Sidebar -->
+    <aside id="sidebar">
+      <!-- Status Cards -->
+      <div id="status-cards">
+        <div class="status-card" id="card-fall" data-status="off">
+          <h3>Fall Detection</h3>
+          <span class="status-badge">OFF</span>
+          <p class="metric" id="metric-fall"></p>
+        </div>
+        <div class="status-card" id="card-inactivity" data-status="off">
+          <h3>Inactivity</h3>
+          <span class="status-badge">OFF</span>
+          <p class="metric" id="metric-inactivity"></p>
+        </div>
+        <div class="status-card" id="card-zone" data-status="off">
+          <h3>Zone Boundary</h3>
+          <span class="status-badge">OFF</span>
+          <p class="metric" id="metric-zone"></p>
+        </div>
+        <div class="status-card" id="card-presence" data-status="off">
+          <h3>Person Presence</h3>
+          <span class="status-badge">OFF</span>
+          <p class="metric" id="metric-presence"></p>
+        </div>
+      </div>
+
+      <!-- Settings Panel -->
+      <details id="settings-panel">
+        <summary>Settings</summary>
+        <div class="settings-content">
+          <label>
+            Fall Hold Duration:
+            <input type="range" id="setting-fall-hold" min="500" max="5000" step="100" value="2000" />
+            <span id="setting-fall-hold-value">2.0s</span>
+          </label>
+          <label>
+            Inactivity Timeout:
+            <input type="range" id="setting-inactivity" min="10000" max="600000" step="5000" value="30000" />
+            <span id="setting-inactivity-value">30s</span>
+          </label>
+          <label>
+            Zone Breach Duration:
+            <input type="range" id="setting-zone-breach" min="1000" max="30000" step="1000" value="3000" />
+            <span id="setting-zone-breach-value">3.0s</span>
+          </label>
+          <label>
+            Presence Timeout:
+            <input type="range" id="setting-presence" min="5000" max="60000" step="1000" value="10000" />
+            <span id="setting-presence-value">10s</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="setting-mute" />
+            Mute Audio Alerts
+          </label>
+        </div>
+      </details>
+
+      <!-- Alert Log -->
+      <div id="alert-log-section">
+        <h3>Alert Log</h3>
+        <div id="alert-log"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
