@@ -13,7 +13,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "sourceMap": true,
-    "outDir": "./dist"
+    "outDir": "docs"
   },
   "include": ["src"]
 }
