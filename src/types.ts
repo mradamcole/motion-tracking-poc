@@ -71,6 +71,7 @@ export interface ZoneRect {
 export interface Settings {
   fallHoldDuration: number;       // ms, default 2000
   inactivityDuration: number;     // ms, default 30000
+  inactivitySensitivity: number;  // 1-10, default 1 (1=low/least sensitive, 10=high/most sensitive)
   zoneBreachDuration: number;     // ms, default 3000
   presenceTimeout: number;        // ms, default 10000
   muted: boolean;
@@ -79,6 +80,7 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   fallHoldDuration: 2000,
   inactivityDuration: 30000,
+  inactivitySensitivity: 1,
   zoneBreachDuration: 3000,
   presenceTimeout: 10000,
   muted: false,

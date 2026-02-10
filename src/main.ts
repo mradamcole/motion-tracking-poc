@@ -40,13 +40,15 @@ let cameraRunning = false;
 let drawingZone = false;
 let lastVideoTime = -1;
 let stream: MediaStream | null = null;
+let lastUIUpdate = 0;
+const UI_THROTTLE_MS = 200; // update status cards at most ~5x/sec
 
 // ============================================================
 // Detectors
 // ============================================================
 
 const fallDetector = new FallDetector({ holdDuration: settings.fallHoldDuration });
-const inactivityDetector = new InactivityDetector({ duration: settings.inactivityDuration });
+const inactivityDetector = new InactivityDetector({ duration: settings.inactivityDuration, sensitivity: settings.inactivitySensitivity });
 const zoneDetector = new ZoneDetector({ breachDuration: settings.zoneBreachDuration });
 const presenceDetector = new PresenceDetector({ timeout: settings.presenceTimeout });
 
@@ -57,7 +59,7 @@ const presenceDetector = new PresenceDetector({ timeout: settings.presenceTimeou
 function onSettingsChange(newSettings: Settings): void {
   settings = newSettings;
   fallDetector.configure({ holdDuration: settings.fallHoldDuration });
-  inactivityDetector.configure({ duration: settings.inactivityDuration });
+  inactivityDetector.configure({ duration: settings.inactivityDuration, sensitivity: settings.inactivitySensitivity });
   zoneDetector.configure({ breachDuration: settings.zoneBreachDuration });
   presenceDetector.configure({ timeout: settings.presenceTimeout });
   setMuted(settings.muted);
@@ -169,20 +171,25 @@ function renderLoop(): void {
       const zoneResult = zoneDetector.update(landmarks, timestamp);
       const presenceResult = presenceDetector.update(landmarks, timestamp);
 
-      // Update UI status cards
-      updateStatusCard('card-fall', fallResult, 'metric-fall');
-      updateStatusCard('card-inactivity', inactivityResult, 'metric-inactivity');
-      updateStatusCard('card-zone', zoneResult, 'metric-zone');
-      updateStatusCard('card-presence', presenceResult, 'metric-presence');
-
-      // Update zone overlay visual
-      updateZoneStatus(zoneResult.status);
-
-      // Handle alerts (log + audio on transition to ALERT)
+      // Handle alerts (log + audio on transition to ALERT) — always runs
       handleDetectorAlert('fall', fallResult.status, fallResult.message);
       handleDetectorAlert('inactivity', inactivityResult.status, inactivityResult.message);
       handleDetectorAlert('zone', zoneResult.status, zoneResult.message);
       handleDetectorAlert('presence', presenceResult.status, presenceResult.message);
+
+      // Throttle UI card updates to avoid jitter from rapid message changes
+      const now = performance.now();
+      if (now - lastUIUpdate >= UI_THROTTLE_MS) {
+        lastUIUpdate = now;
+
+        updateStatusCard('card-fall', fallResult, 'metric-fall');
+        updateStatusCard('card-inactivity', inactivityResult, 'metric-inactivity');
+        updateStatusCard('card-zone', zoneResult, 'metric-zone');
+        updateStatusCard('card-presence', presenceResult, 'metric-presence');
+
+        // Update zone overlay visual
+        updateZoneStatus(zoneResult.status);
+      }
     });
   }
 

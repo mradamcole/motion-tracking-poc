@@ -2,14 +2,28 @@ import type { NormalizedLandmark } from '../types';
 import { DetectorStatus, type DetectorResult, type Detector } from './types';
 
 export interface InactivityDetectorConfig {
-  duration: number; // ms, default 30000
+  duration: number;      // ms, default 30000
+  sensitivity?: number;  // 1-10, default 1
 }
 
-// Dead-zone threshold per landmark — movement below this is treated as 0
-const DEAD_ZONE = 0.002;
+// Sensitivity range boundaries (linear interpolation from 1 to 10)
+const SENSITIVITY_MIN = 1;
+const SENSITIVITY_MAX = 10;
 
-// Total movement score threshold for "meaningful movement"
-const MOVEMENT_THRESHOLD = 0.01;
+// "Motion Sensitivity" scale:
+//   Low  (1)  → large thresholds → ignores small movements / noise
+//   High (10) → small thresholds → picks up subtle movements
+const DEAD_ZONE_AT_LOW = 0.004;          // sensitivity=1
+const DEAD_ZONE_AT_HIGH = 0.0001;        // sensitivity=10
+
+const MOVEMENT_THRESHOLD_AT_LOW = 0.02;  // sensitivity=1
+const MOVEMENT_THRESHOLD_AT_HIGH = 0.0005; // sensitivity=10
+
+/** Linearly interpolate from low→high end based on sensitivity (1-10). */
+function lerp(atLow: number, atHigh: number, sensitivity: number): number {
+  const t = (sensitivity - SENSITIVITY_MIN) / (SENSITIVITY_MAX - SENSITIVITY_MIN);
+  return atLow + t * (atHigh - atLow);
+}
 
 /**
  * Inactivity Detector
@@ -20,12 +34,17 @@ const MOVEMENT_THRESHOLD = 0.01;
  */
 export class InactivityDetector implements Detector {
   private duration: number;
+  private deadZone: number;
+  private movementThreshold: number;
   private previousLandmarks: NormalizedLandmark[] | null = null;
   private lastUpdateTimestamp: number | null = null;
   private elapsedInactiveMs: number = 0;
 
   constructor(config: InactivityDetectorConfig) {
     this.duration = config.duration;
+    const sensitivity = config.sensitivity ?? 1;
+    this.deadZone = lerp(DEAD_ZONE_AT_LOW, DEAD_ZONE_AT_HIGH, sensitivity);
+    this.movementThreshold = lerp(MOVEMENT_THRESHOLD_AT_LOW, MOVEMENT_THRESHOLD_AT_HIGH, sensitivity);
   }
 
   update(landmarks: NormalizedLandmark[] | null, timestamp: number): DetectorResult {
@@ -50,7 +69,7 @@ export class InactivityDetector implements Detector {
       ? timestamp - this.lastUpdateTimestamp
       : 0;
 
-    if (movementScore >= MOVEMENT_THRESHOLD) {
+    if (movementScore >= this.movementThreshold) {
       // Meaningful movement → reset
       this.elapsedInactiveMs = 0;
     } else {
@@ -67,6 +86,10 @@ export class InactivityDetector implements Detector {
   configure(config: Record<string, unknown>): void {
     if (typeof config.duration === 'number') {
       this.duration = config.duration;
+    }
+    if (typeof config.sensitivity === 'number') {
+      this.deadZone = lerp(DEAD_ZONE_AT_LOW, DEAD_ZONE_AT_HIGH, config.sensitivity);
+      this.movementThreshold = lerp(MOVEMENT_THRESHOLD_AT_LOW, MOVEMENT_THRESHOLD_AT_HIGH, config.sensitivity);
     }
   }
 
@@ -91,7 +114,7 @@ export class InactivityDetector implements Detector {
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       // Dead-zone filter
-      if (dist < DEAD_ZONE) continue;
+      if (dist < this.deadZone) continue;
 
       score += dist * visibility;
     }

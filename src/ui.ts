@@ -87,6 +87,8 @@ export function initSettingsPanel(
   const fallValue = document.getElementById('setting-fall-hold-value')!;
   const inactivitySlider = document.getElementById('setting-inactivity') as HTMLInputElement;
   const inactivityValue = document.getElementById('setting-inactivity-value')!;
+  const inactSensSlider = document.getElementById('setting-inactivity-sensitivity') as HTMLInputElement;
+  const inactSensValue = document.getElementById('setting-inactivity-sensitivity-value')!;
   const zoneSlider = document.getElementById('setting-zone-breach') as HTMLInputElement;
   const zoneValue = document.getElementById('setting-zone-breach-value')!;
   const presenceSlider = document.getElementById('setting-presence') as HTMLInputElement;
@@ -98,6 +100,8 @@ export function initSettingsPanel(
   fallValue.textContent = `${(settings.fallHoldDuration / 1000).toFixed(1)}s`;
   inactivitySlider.value = String(settings.inactivityDuration);
   inactivityValue.textContent = formatDuration(settings.inactivityDuration);
+  inactSensSlider.value = String(settings.inactivitySensitivity);
+  inactSensValue.textContent = formatSensitivity(settings.inactivitySensitivity);
   zoneSlider.value = String(settings.zoneBreachDuration);
   zoneValue.textContent = `${(settings.zoneBreachDuration / 1000).toFixed(1)}s`;
   presenceSlider.value = String(settings.presenceTimeout);
@@ -115,6 +119,13 @@ export function initSettingsPanel(
   inactivitySlider.addEventListener('input', () => {
     settings.inactivityDuration = Number(inactivitySlider.value);
     inactivityValue.textContent = formatDuration(settings.inactivityDuration);
+    saveSettings(settings);
+    onChange(settings);
+  });
+
+  inactSensSlider.addEventListener('input', () => {
+    settings.inactivitySensitivity = Number(inactSensSlider.value);
+    inactSensValue.textContent = formatSensitivity(settings.inactivitySensitivity);
     saveSettings(settings);
     onChange(settings);
   });
@@ -148,4 +159,12 @@ function formatDuration(ms: number): string {
     return remaining > 0 ? `${minutes}m ${remaining}s` : `${minutes}m`;
   }
   return `${seconds}s`;
+}
+
+function formatSensitivity(value: number): string {
+  let label: string;
+  if (value <= 3) label = 'Low';
+  else if (value <= 6) label = 'Medium';
+  else label = 'High';
+  return `${value} (${label})`;
 }
